@@ -1,0 +1,30 @@
+[info]
+title=In-text complete
+desc=Allows to complete expression with fragments from whole text
+type=cudatext-plugin
+subdir=cuda_intext_complete
+homepage=https://github.com/kvichans/cuda_intext_complete
+
+[item11]
+section=commands
+caption=In-text C&omplete\Show &list
+method=show_list
+;menu=0
+
+[item21]
+section=commands
+caption=In-text C&omplete\Substitute &next
+method=set_next
+;menu=0
+
+[item22]
+section=commands
+caption=In-text C&omplete\Substitute &previous
+method=set_prev
+;menu=0
+
+[item31]
+section=commands
+caption=In-text C&omplete\&Config...
+method=dlg_config
+;menu=0

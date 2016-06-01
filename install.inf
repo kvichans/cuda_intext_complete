@@ -1,6 +1,6 @@
 [info]
-title=In-text complete
-desc=Allows to complete expression with fragments from whole text
+title=In-text Complete
+desc=Suggests completions for syntax expressions, using fragments from the entire text
 type=cudatext-plugin
 subdir=cuda_intext_complete
 homepage=https://github.com/kvichans/cuda_intext_complete

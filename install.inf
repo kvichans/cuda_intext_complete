@@ -1,30 +1,64 @@
 [info]
-title=In-text Complete
+title=In-text complete
 desc=Suggests completions for syntax expressions, using fragments from the entire text
 type=cudatext-plugin
 subdir=cuda_intext_complete
 homepage=https://github.com/kvichans/cuda_intext_complete
 
+[item1]
+section=events
+events=on_snippet
+
 [item11]
 section=commands
-caption=In-text C&omplete\Show &list
-method=show_list
+caption=In-text C&ompletion\Show l&ist of word-like forms
+method=show_list_wd
+;menu=0
+
+[item12]
+section=commands
+caption=In-text C&ompletion\Show &list of expession-like forms
+method=show_list_ex
+;menu=0
+
+[item20]
+section=commands
+caption=In-text C&ompletion\-
+method=_
 ;menu=0
 
 [item21]
 section=commands
-caption=In-text C&omplete\Substitute &next
-method=set_next
+caption=In-text C&ompletion\Use &next word-like form
+method=set_next_wd
 ;menu=0
 
 [item22]
 section=commands
-caption=In-text C&omplete\Substitute &previous
-method=set_prev
+caption=In-text C&ompletion\Use n&ext expession-like form
+method=set_next_ex
+;menu=0
+
+[item23]
+section=commands
+caption=In-text C&ompletion\Use &previous word-like form
+method=set_prev_wd
+;menu=0
+
+[item24]
+section=commands
+caption=In-text C&ompletion\Use p&revious expession-like form
+method=set_prev_ex
+;menu=0
+
+[item30]
+section=commands
+caption=In-text C&ompletion\-
+method=_
 ;menu=0
 
 [item31]
 section=commands
-caption=In-text C&omplete\&Config...
+caption=In-text C&ompletion\&Config...
 method=dlg_config
 ;menu=0

@@ -1,2 +1,5 @@
+0.9.0 (2016-06-06)
+added: word-like and expr-like variants
+
 0.8.0 (2016-05-27)
 init

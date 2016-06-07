@@ -332,7 +332,7 @@ class Command:
         if not self.sess.bids:
             return app.msg_status(_('No in-text completions'))
         if self.sngl and 1==len(self.sess.bids):
-            return self._subst('next')
+            return self._subst('#0', 'curr')
         ed.complete_alt(c10.join([bd.replace(c9, '¬')
                                 +c9+f(':{}', 1+self.sess.bids_c[ibd])
                                 +c9+str(ibd) 

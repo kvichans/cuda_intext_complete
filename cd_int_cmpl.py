@@ -2,7 +2,7 @@
 Authors:
     Andrey Kvichansky    (kvichans on github.com)
 Version:
-    '0.9.0 2016-06-06'
+    '0.9.1 2016-06-08'
 ToDo: (see end of file)
 '''
 
@@ -25,23 +25,19 @@ _   = get_translation(__file__) # I18N
 
 c10 = chr(10)
 c13 = chr(13)
-NOT_IND = -1
-class Command:
-    class Sess:
-        def __str__(self):
-            return '' \
-            +   f('we={}, row={}, (bgn,crt)={}, sel={}', self.wdex, self.row, (self.bgn_sub, self.crt_pos), self.sel_sub) \
-            +   f(', i={}, bids={}',self.bids_i, (list(zip(self.bids, self.bids_rs))))
-        def __init__(self):
-            self.wdex       = ''        # type: 'word' or 'expr'
-            self.row        = -1        # row for work
-            self.crt_pos    = -1        # pos of caret (changed after substitution)
-            self.bgn_sub    = -1        # Start pos to replace
-            self.sel_sub    = False     # Select after subst
-            self.bids       = []        # Variants
-            self.bids_rs    = []        # Source row inds
-            self.bids_i     = NOT_IND   # Last used index of bids
 
+NOT_IND = -1
+
+DEF_QUOTES  = '"'+"'"
+DEF_BRCKTS  = '[](){}<>'
+DEF_MIN_LEN = 3
+DEF_SNGL    = True
+DEF_NEAR    = True
+DEF_WDSGNS  = '_'
+DEF_EXSGNS  = r'!@#$%^&*-_=+;:\|,./?`~"'+"'"+DEF_BRCKTS # "'
+DEF_EXALL   = True
+DEF_EXPAIR  = True
+class Command:
     def dlg_config(self):
         DLG_W,  \
         DLG_H   = 430, 300
@@ -57,23 +53,6 @@ class Command:
                     '\r   fun(·1,·m()·)'
                     )
         sngl_c  = _('Do&nt show list with single variant. Directly use the variant.')
-        cnts    =[dict(           tp='lb'   ,t=5        ,l=5        ,w=130        ,cap=_('Word-like variant:')                          ) #
-                 ,dict(           tp='lb'   ,tid='wdcs' ,l=40       ,w=130        ,cap=_('Contains extra si&gns:')          ,hint=incs_h) # &g
-                 ,dict(cid='wdcs',tp='ed'   ,t=25       ,l=180      ,w=DLG_W-180-5                                                      ) #
-
-                 ,dict(           tp='lb'   ,t=65       ,l=5        ,w=130        ,cap=_('Expession-like variant:')                     ) #
-                 ,dict(           tp='lb'   ,tid='excs' ,l=40       ,w=130        ,cap=_('Contains extra &signs:')          ,hint=incs_h) # &s
-                 ,dict(cid='excs',tp='ed'   ,t=85       ,l=180      ,w=DLG_W-180-5                                                      ) #
-                 ,dict(cid='exal',tp='ch'   ,t=110      ,l=180      ,w=130        ,cap=_('An&y not spaces')         ,_act=1             ) # &y
-                 ,dict(cid='pair',tp='ch'   ,t=135      ,l=40       ,w=290        ,cap=pair_c                               ,hint=pair_h) # &e
-
-                 ,dict(           tp='lb'   ,tid='minl' ,l=5        ,w=180        ,cap=_('&Minimal base length (2-5):')     ,hint=minl_h) # &m
-                 ,dict(cid='minl',tp='sp-ed',t=180      ,l=180      ,w=DLG_W-180-5                                  ,props='2,5,1'      ) #  
-                 ,dict(cid='near',tp='ch'   ,t=210      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line.')      ) # &r
-                 ,dict(cid='sngl',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=sngl_c                                           ) # &n
-                 ,dict(cid='!'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-180,w=80         ,cap=_('Save')                    ,props='1'          ) #    default
-                 ,dict(cid='-'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-85 ,w=80         ,cap=_('Cancel')                                      ) #  
-                ]#NOTE: cfg
         vals    = dict(minl=self.min_len
                       ,near=self.near
                       ,sngl=self.sngl
@@ -83,11 +62,44 @@ class Command:
                       ,pair=self.expair
                       )
         focused = 'wdcs'
-        if True:#while True:
-            act_cid, vals, chds = dlg_wrapper(_('Configure in-text completions'), DLG_W, DLG_H, cnts, vals, focus_cid=focused)
-            if act_cid is None or act_cid=='-':    return#while True
-            focused = chds[0] if 1==len(chds) else focused
-            if act_cid=='!':
+        while True:
+            cnts    =[dict(           tp='lb'   ,t=5        ,l=5        ,w=130        ,cap=_('Word-like variant:')                          ) #
+                     ,dict(           tp='lb'   ,tid='wdcs' ,l=40       ,w=130        ,cap=_('Contains extra si&gns:')          ,hint=incs_h) # &g
+                     ,dict(cid='wdcs',tp='ed'   ,t=25       ,l=180      ,w=DLG_W-180-5                                                      ) #
+                     
+                     ,dict(           tp='--'   ,t=50                                                                                       ) #
+                     ,dict(           tp='lb'   ,t=65       ,l=5        ,w=130        ,cap=_('Expession-like variant:')                     ) #
+                     ,dict(           tp='lb'   ,tid='excs' ,l=40       ,w=130        ,cap=_('Contains extra &signs:')          ,hint=incs_h) # &s
+                     ,dict(cid='excs',tp='ed'   ,t=85       ,l=180      ,w=DLG_W-180-5                                  ,en=not vals['exal']) #
+                     ,dict(cid='exal',tp='ch'   ,t=110      ,l=180      ,w=130        ,cap=_('An&y not spaces')         ,act=1              ) # &y
+                     ,dict(cid='pair',tp='ch'   ,t=135      ,l=40       ,w=290        ,cap=pair_c                               ,hint=pair_h) # &e
+                     
+                     ,dict(           tp='--'   ,t=165                                                                                      ) #
+                     ,dict(           tp='lb'   ,tid='minl' ,l=5        ,w=180        ,cap=_('&Minimal base length (2-5):')     ,hint=minl_h) # &m
+                     ,dict(cid='minl',tp='sp-ed',t=180      ,l=180      ,w=DLG_W-180-5                                  ,props='2,5,1'      ) #  
+                     ,dict(cid='near',tp='ch'   ,t=210      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line.')      ) # &r
+                     ,dict(cid='sngl',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=sngl_c                                           ) # &n
+                     ,dict(cid='dflt',tp='bt'   ,t=DLG_H-30 ,l=5        ,w=130        ,cap=_('&Default values')                             ) # &d
+                     ,dict(cid='!'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-180,w=80         ,cap=_('Save')                    ,props='1'          ) #    default
+                     ,dict(cid='-'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-85 ,w=80         ,cap=_('Cancel')                                      ) #  
+                    ]#NOTE: cfg
+            aid, vals, chds = dlg_wrapper(_('Configure "In-text completion"'), DLG_W, DLG_H, cnts, vals, focus_cid=focused)
+            if aid is None or aid=='-':    return#while True
+            focused = 'excs' \
+                        if aid=='exal' and not vals['exal'] else \
+                      chds[0] \
+                        if 1==len(chds) else \
+                      focused
+            if aid=='dflt':
+                vals['minl']= DEF_MIN_LEN
+                vals['sngl']= DEF_SNGL
+                vals['near']= DEF_NEAR
+                vals['wdcs']= DEF_WDSGNS
+                vals['excs']= DEF_EXSGNS
+                vals['exal']= DEF_EXALL
+                vals['pair']= DEF_EXPAIR
+            
+            if aid=='!':
                 if vals['minl']!=self.min_len:
                     apx.set_opt('itc_min_len', max(2, vals['minl']))
                 if vals['sngl']!=self.sngl:
@@ -106,7 +118,7 @@ class Command:
                     apx.set_opt('itc_expr_pair',  vals['pair'])
                 
                 self._prep_const()
-#               break#while
+                break#while
            #while
        #def dlg_config
 
@@ -115,19 +127,19 @@ class Command:
         self.sess   = None          # Info to work "in one place" - try complete-bids
     
     def _prep_const(self):
-        brckts      = apx.get_opt('itc_brackets', '[](){}<>')
+        brckts      = apx.get_opt('itc_brackets'    , DEF_BRCKTS)
 
-        self.min_len= apx.get_opt('itc_min_len', 3)
-        self.sngl   = apx.get_opt('itc_sngl', True)
-        self.near   = apx.get_opt('itc_near', True)
+        self.min_len= apx.get_opt('itc_min_len'     , DEF_MIN_LEN)
+        self.sngl   = apx.get_opt('itc_sngl'        , DEF_SNGL)
+        self.near   = apx.get_opt('itc_near'        , DEF_NEAR)
         
-        self.wdsgns = apx.get_opt('itc_word_signs', '_')
+        self.wdsgns = apx.get_opt('itc_word_signs'  , DEF_WDSGNS)
         
-        self.exsgns = apx.get_opt('itc_expr_signs', r'!@#$%^&*-_=+;:\|,./?`~"'+"'"+brckts) # "'
-        self.exall  = apx.get_opt('itc_expr_all', True)
-        self.expair = apx.get_opt('itc_expr_pair', True)
+        self.exsgns = apx.get_opt('itc_expr_signs'  , DEF_EXSGNS)
+        self.exall  = apx.get_opt('itc_expr_all'    , DEF_EXALL)
+        self.expair = apx.get_opt('itc_expr_pair'   , DEF_EXPAIR)
         
-        self.quotes = apx.get_opt('itc_quotes', '"'+"'")
+        self.quotes = apx.get_opt('itc_quotes'      , DEF_QUOTES)
         self.opn2cls= {brckts[i  ]:brckts[i+1] for i in range(0,len(brckts),2)}
         self.cls2opn= {brckts[i+1]:brckts[i  ] for i in range(0,len(brckts),2)}
 #       self.cmpl   = apx.get_opt('itc_find_within', '|n-sp|word|signs|')  # '|word|signs|n-sp|'
@@ -138,11 +150,29 @@ class Command:
                       r'[\w'+re.escape(self.exsgns)+']+'
         
         self.base_re= re.compile(self.wdcmpl)
+       #def _prep_const
+
+    class Sess:
+        def __str__(self):
+            return '' \
+            +   f('we={}, row={}, (bgn,crt)={}, sel={}', self.wdex, self.row, (self.bgn_sub, self.crt_pos), self.sel_sub) \
+            +   f(', i={}, bids={}',self.bids_i, (list(zip(self.bids, self.bids_rs))))
+        def __init__(self):
+            self.wdex       = ''        # type: 'word' or 'expr'
+            self.row        = -1        # row for work
+            self.crt_pos    = -1        # pos of caret (changed after substitution)
+            self.bgn_sub    = -1        # Start pos to replace
+            self.sel_sub    = False     # Select after subst
+            self.bids       = []        # Variants
+            self.bids_rs    = []        # Source row inds
+            self.bids_i     = NOT_IND   # Last used index of bids
+            self.pre_add_s  = ''        # Last added text
+            self.pre_mver   = None      # Last mod-ver of ed
+            self.pre_crt0   = None      # Last carets  of ed
 
     def _prep_sess(self, wdex='word'):
         """ Params
-                wdex    Type of sess
-                            'word' / 'expr'
+                wdex    Type of sess:   'word' / 'expr'
         """
         crts    = ed.get_carets()
         if len(crts)>1: 
@@ -151,25 +181,35 @@ class Command:
         ,cEnd, rEnd)= crts[0]
         if -1!=rEnd and rCrt!=rEnd:
             return app.msg_status(_("Command doesn't work with multi-line selection"))
+
+        stayed      =   self.sess     \
+                    and self.sess.pre_mver == ed.get_prop(app.PROP_MODIFIED_VERSION) \
+                    and self.sess.pre_crt0 == crts[0]
         
         cEnd, rEnd  = (cCrt, rCrt) if -1==rEnd else (cEnd, rEnd)
+        eb_be       = 'be' if cCrt>cEnd else 'eb' if cCrt<cEnd else ''
         ((rSelB, cSelB)
         ,(rSelE, cSelE))= apx.minmax((rCrt, cCrt), (rEnd, cEnd))
-        stayed      =           self.sess           \
-                    and  rCrt ==self.sess.row       \
-                    and (cSelB==self.sess.bgn_sub   \
-                        or not  self.sess.sel_sub)  \
-                    and  cSelE==self.sess.crt_pos   # Not 1st call and Caret/Sel doesnot move/change
+#       stayed      =           self.sess           \
+#                   and  rCrt ==self.sess.row       \
+#                   and (cSelB==self.sess.bgn_sub   \
+#                       or not  self.sess.sel_sub)  \
+#                   and  cSelE==self.sess.crt_pos   # Not 1st call and Caret/Sel doesnot move/change
+        pass;                   LOG and stayed and log('stayed,(wdex,self.sess.wdex)={}',(stayed,(wdex,self.sess.wdex)))
         if stayed   and   wdex==self.sess.wdex:
             # Sess OK
             return True
 
         what        = ''                    # Str to find
+        what_b      = -1                    # Pos what begin
+        what_e      = -1                    # Pos what end
         wbnd        = True                  # Need left word bound
         sel         = ''
         if stayed   and   wdex!=self.sess.wdex:
             # Change sess type
             what    = self.sess.src_what
+            what_b  = self.sess.src_what_b
+            what_e  = self.sess.src_what_e
             wbnd    = self.sess.src_wbnd
         if not stayed:
             # New sess
@@ -178,19 +218,34 @@ class Command:
             if sel:
                 # Use selection to find
                 what    = sel
+                what_b  = cSelB
+                what_e  = cSelE
                 wbnd    = 0==cSelB or line[cSelB-1].isspace()
             else:
-                # Use "chars around caret" to find 
-                tx_bfr  = line[:cCrt]
-                ch_aft  = line[cCrt] if cCrt<len(line) else ' '
-                pass;              #LOG and log('ch_aft,tx_bfr={}',(ch_aft,tx_bfr))
-                if  len(tx_bfr)>=self.min_len   \
-                and (ch_aft.isspace() or True or ch_aft in self.cls2opn) \
-                and (tx_bfr[-1].isalnum() 
-                  or tx_bfr[-1] in self.wdsgns):
+                # Use "chars around caret" to find what
+                tx_bfr  = line[:cCrt ]
+                ch_bfr  = tx_bfr[-1] if tx_bfr else ' '
+                tx_aft  = line[ cCrt:]
+                ch_aft  = tx_aft[ 0] if tx_aft else ' '
+                pass;          #LOG and log('ch_bfr,ch_aft,tx_bfr,tx_aft={}',(ch_bfr,ch_aft,tx_bfr,tx_aft))
+                shf_l   = 0
+                shf_r   = 0
+                if ch_bfr.isalnum() or ch_bfr in self.wdsgns:
                     tx_bfr_r= ''.join(reversed(tx_bfr))
-                    wrd_l   = len(self.base_re.match(tx_bfr_r).group())
-                    what    = line[cCrt-wrd_l:cCrt]
+                    shf_l   = len(self.base_re.match(tx_bfr_r).group())
+                if ch_aft.isalnum() or ch_aft in self.wdsgns:
+                    shf_r   = len(self.base_re.match(tx_aft).group())
+                what_b  = cCrt-shf_l
+                what_e  = cCrt+shf_r
+                what    = line[what_b:what_e]
+                pass;          #LOG and log('(shf_l,shf_r), (what_b,what_e), what={}',((shf_l,shf_r), (what_b,what_e), what))
+#               if  len(tx_bfr)>=self.min_len   \
+#               and (ch_aft.isspace() or True or ch_aft in self.cls2opn) \
+#               and (tx_bfr[-1].isalnum() 
+#                 or tx_bfr[-1] in self.wdsgns):
+#                   tx_bfr_r= ''.join(reversed(tx_bfr))
+#                   wrd_l   = len(self.base_re.match(tx_bfr_r).group())
+#                   what    = line[cCrt-wrd_l:cCrt]
         
         if not  what \
         or not  what.strip():
@@ -203,12 +258,16 @@ class Command:
         asexpr              = wdex=='expr'
         # Make new Sess
         if not stayed:
+            pass;              #LOG and log('new sess',())
             self.sess           = Command.Sess()
             self.sess.row       = rCrt
-            self.sess.crt_pos   = cSelE
-            self.sess.bgn_sub   = cSelE - len(what)
-            self.sess.sel_sub   = bool(sel)
+#           self.sess.crt_pos   = cSelE
+#           self.sess.bgn_sub   = cSelE - len(what)
+            self.sess.sel_sub   = eb_be
+            self.sess.src_crt   = cCrt
             self.sess.src_what  = what
+            self.sess.src_what_b= what_b
+            self.sess.src_what_e= what_e
             self.sess.src_wbnd  = wbnd
         self.sess.wdex          = wdex
         what_re = re.compile(''
@@ -269,13 +328,14 @@ class Command:
         if not bids_d:
             return app.msg_status(_('No in-text completions'))
             
-        self.sess.bids      = list(bids_d.keys())
-        self.sess.bids_c    = list(bids_d.values())
-        self.sess.bids_i    = NOT_IND
-        if len(self.sess.bids)>1 and self.near:
-            self.sess.bids_i= min([(abs(bid_r-self.sess.row), bid_i) 
-                                    for (bid_i,bid_r) in enumerate(self.sess.bids_c)
-                                  ])[1]
+        self.sess.bids  = list(bids_d.keys())
+        self.sess.bids_c= list(bids_d.values())
+        self.sess.bids_i= min([(abs(bid_r-self.sess.row), bid_i) 
+                                for (bid_i,bid_r) in enumerate(self.sess.bids_c)
+                              ])[1] \
+                            if len(self.sess.bids)>1 and self.near else \
+                          0
+        self.incr_bfr   = False  # Dont increment before use
         pass;                  #LOG and log('bids={}',(list(zip(self.sess.bids, self.sess.bids_c))))
         pass;                  #LOG and log('sess={}',(self.sess))
         pass;                  #return False
@@ -295,35 +355,67 @@ class Command:
            not self._prep_sess(wdex): return
         if not self.sess.bids:
             return app.msg_status(_('No in-text completions'))
-        shft                = 1 if which=='next' else -1
-        self.sess.bids_i    = int(which.strip('#')) \
-                                if which[0]=='#' else \
-                              0 \
-                                if self.sess.bids_i==NOT_IND else \
-                              (self.sess.bids_i+shft) % len(self.sess.bids)
-        sub_s   = self.sess.bids[self.sess.bids_i]
-        pass;                  #LOG and log('i, sub_s={}',(self.sess.bids_i, sub_s))
-        ed.set_caret(self.sess.bgn_sub, self.sess.row)
-        ed.delete(self.sess.bgn_sub, self.sess.row
-                 ,self.sess.crt_pos, self.sess.row)
-        ed.insert(self.sess.bgn_sub, self.sess.row
-                 ,sub_s)
-        self.sess.crt_pos   = self.sess.bgn_sub + len(sub_s)
-        if self.sess.sel_sub:
-            ed.set_caret(self.sess.crt_pos, self.sess.row
-                        ,self.sess.bgn_sub, self.sess.row)
+        shft                = 1 if which=='next' else -1 if which=='prev' else 0
+        bids_i  = int(which)                if which.isdigit()  else \
+                  self.sess.bids_i + shft   if self.incr_bfr    else \
+                  self.sess.bids_i
+        bids_i  = bids_i % len(self.sess.bids)
+        sub_s   = self.sess.bids[bids_i]
+        add_s   = sub_s[len(self.sess.src_what):]
+        pass;                  #LOG and log('i, sub_s, add_s={}',(bids_i, sub_s, add_s))
+
+        if self.sess.pre_add_s:
+            line    = ed.get_text_line(self.sess.row)
+            if self.sess.pre_add_s==line[self.sess.src_what_e:self.sess.src_what_e+len(self.sess.pre_add_s)]:
+                pass;          #LOG and log('?? undo mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
+                ed.cmd(cmds.cCommand_Undo)
+                pass;          #LOG and log('ok undo mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
+#       ed.set_caret(    self.sess.src_what_e,              self.sess.row)
+#       ed.delete(       self.sess.src_what_e,              self.sess.row
+#                ,       self.sess.src_what_e+len(add_s),   self.sess.row)
+        ed.insert(       self.sess.src_what_e,              self.sess.row,  add_s)
+        pass;                  #LOG and log('ok ins  mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
+        self.sess.pre_add_s = add_s
+        if False:pass
+        elif self.sess.sel_sub=='be':
+            ed.set_caret(self.sess.src_what_e+len(add_s),   self.sess.row
+                        ,self.sess.src_what_b,              self.sess.row)
+        elif self.sess.sel_sub=='eb':
+            ed.set_caret(self.sess.src_what_b,              self.sess.row
+                        ,self.sess.src_what_e+len(add_s),   self.sess.row)
         else:
-            ed.set_caret(self.sess.crt_pos, self.sess.row)
-        next_i      = (self.sess.bids_i+shft) % len(self.sess.bids)
-        next_info   = '' if 1==len(self.sess.bids) else \
-                      f(_('. Next #{}: "{}"'), next_i, self.sess.bids[next_i][:50])
-        app.msg_status(f(_('In-text completion #{} ({}){}'), 1+self.sess.bids_i, len(self.sess.bids), next_info))
+            ed.set_caret(self.sess.src_crt,                 self.sess.row)
+        self.sess.pre_mver    = ed.get_prop(app.PROP_MODIFIED_VERSION)
+        self.sess.pre_crt0    = ed.get_carets()[0]
+
+#       ed.set_caret(self.sess.bgn_sub, self.sess.row)
+#       ed.delete(   self.sess.bgn_sub, self.sess.row
+#                ,   self.sess.crt_pos, self.sess.row)
+#       ed.insert(   self.sess.bgn_sub, self.sess.row
+#                ,   sub_s)
+#       self.sess.crt_pos   = self.sess.bgn_sub + len(sub_s)
+#       if self.sess.sel_sub:
+#           ed.set_caret(self.sess.crt_pos, self.sess.row
+#                       ,self.sess.bgn_sub, self.sess.row)
+#       else:
+#           ed.set_caret(self.sess.crt_pos, self.sess.row)
+#
+#       next_i      = (self.sess.bids_i+shft) % len(self.sess.bids)
+#       next_info   = '' if 1==len(self.sess.bids) else \
+#                     f(_('. Next #{}: "{}"'), next_i, self.sess.bids[next_i][:50])
+#       app.msg_status(f(_('In-text completion #{} ({}){}'), 1+self.sess.bids_i, len(self.sess.bids), next_info))
+        app.msg_status(f(_('In-text completion #{} ({})'),   1+self.sess.bids_i, len(self.sess.bids)))
+#       shft                = 1 if which=='next' or which[0]=='#' else -1
+        self.sess.bids_i    = bids_i
+        self.incr_bfr       = True
        #def _subst
     def set_next_wd(self):  return self._subst('next', 'word')
     def set_next_ex(self):  return self._subst('next', 'expr')
     def set_prev_wd(self):  return self._subst('prev', 'word')
     def set_prev_ex(self):  return self._subst('prev', 'expr')
-
+    def on_snippet(self, sed, sid, ibd_s):
+        if sid=='in-te-co': return self._subst(ibd_s , 'curr')
+    
     def show_list_wd(self): return self.show_list('word')
     def show_list_ex(self): return self.show_list('expr')
     def show_list(self, wdex):
@@ -333,17 +425,13 @@ class Command:
             return app.msg_status(_('No in-text completions'))
         if self.sngl and 1==len(self.sess.bids):
             return self._subst('#0', 'curr')
-        ed.complete_alt(c10.join([bd.replace(c9, '¬')
-                                +c9+f(':{}', 1+self.sess.bids_c[ibd])
-                                +c9+str(ibd) 
+        ed.complete_alt(c10.join([bd.replace(c9, '¬')                   # main text
+                                +c9+f(':{}', 1+self.sess.bids_c[ibd])   # right text ":row"
+                                +c9+str(ibd)                            # hidden text
                                 for (ibd, bd) in enumerate(self.sess.bids)])
-                       ,'in-text_complete', 0
+                       ,'in-te-co', 0
                        ,self.sess.bids_i)
        #def show_list
-    def on_snippet(self, ed_self, snippet_id, snippet_text):
-        pass;                  #LOG and log('snippet_id,snippet_text={}',(snippet_id,snippet_text))
-        if snippet_id != 'in-text_complete':    return
-        self._subst('#'+snippet_text, 'curr')
    #class Command
 
 '''
@@ -355,4 +443,6 @@ ToDo
 [?][kv-kv][30may16] Save invertion for sel ?
 [ ][kv-kv][30may16] Complete before close brackets
 [ ][kv-kv][05jun16] Select nearest (by row) bid when show list before first substs
+[ ][kv-kv][06jun16] Add btn "Def"
+[ ][kv-kv][07jun16] Fix caret pos for Undo: dont delete base, only delete after base
 '''

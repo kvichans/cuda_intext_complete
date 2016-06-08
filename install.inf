@@ -59,6 +59,6 @@ method=_
 
 [item31]
 section=commands
-caption=In-text C&ompletion\&Config...
+caption=In-text C&ompletion\&Configure...
 method=dlg_config
 ;menu=0

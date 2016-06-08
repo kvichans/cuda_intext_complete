@@ -328,6 +328,18 @@ def dlg_wrapper(title, w, h, cnts, in_vals={}, focus_cid=None):
     for cnt in cnts:
         tp      = cnt['tp']
         tp      = REDUCTS.get(tp, tp)
+        if tp=='--':
+            # Horz-line
+            t   = cnt.get('t')
+            l   = cnt.get('l', 0)                   # def: from DlgLeft
+            r   = cnt.get('r', l+cnt.get('w', w))   # def: to   DlgRight
+            lst = ['type=label']
+            lst+= ['cap='+'—'*1000]
+            lst+= ['en=0']
+            lst+= ['pos={l},{t},{r},0'.format(l=l,t=t,r=r)]
+            ctrls_l+= [chr(1).join(lst)]
+            continue#for cnt
+            
         lst     = ['type='+tp]
         # Simple props
         for k in ['cap', 'hint', 'props']:
@@ -396,6 +408,7 @@ def dlg_wrapper(title, w, h, cnts, in_vals={}, focus_cid=None):
             lst    += ['act='+('1' if val in [True, '1'] else '0')]
         pass;                      #LOG and log('lst={}',lst)
         ctrls_l+= [chr(1).join(lst)]
+       #for cnt
     pass;                  #LOG and log('ok ctrls_l={}',pformat(ctrls_l, width=120))
 
     ans     = app.dlg_custom(title, w, h, '\n'.join(ctrls_l), cid2i.get(focus_cid, -1))
@@ -403,7 +416,7 @@ def dlg_wrapper(title, w, h, cnts, in_vals={}, focus_cid=None):
 
     btn_i,  \
     vals_ls = ans[0], ans[1].splitlines()
-    btn_cid = cnts[btn_i]['cid']
+    aid     = cnts[btn_i]['cid']
     # Parse output values
     an_vals = {cid:vals_ls[cid2i[cid]] for cid in in_vals}
     for cid in an_vals:
@@ -436,7 +449,8 @@ def dlg_wrapper(title, w, h, cnts, in_vals={}, focus_cid=None):
         else: 
             an_val = type(in_val)(an_val)
         an_vals[cid]    = an_val
-    return  btn_cid, an_vals, [cid for cid in in_vals if in_vals[cid]!=an_vals[cid]]
+       #for cid
+    return  aid, an_vals, [cid for cid in in_vals if in_vals[cid]!=an_vals[cid]]
    #def dlg_wrapper
 
 def get_hotkeys_desc(cmd_id, ext_id=None, keys_js=None, def_ans=''):

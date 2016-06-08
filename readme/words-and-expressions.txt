@@ -1,0 +1,19 @@
+You can use two types of completions in this plugin:
+- words
+- expressions
+
+Words contain only letters/digits and some amount of other chars (by default only "_").
+Expressions can contain all spec-chars and even any non-space chars. Expressions can be 
+with spaces inside, if option "Expands to include both pair-chars" is on.
+
+Both variants of lists (words, expr) can be used by choosing next/prev (commands 
+"Use next/prev...") or by showing the full completion list (commands "Show list...").
+While caret pos is not changed, you can:
+
+- switch between types of list
+- after choosing, show list
+- after showing list, continue choosing
+
+Both choosing of variants, and showing of list, begin from nearest variant
+(nearest by line number), if option "Start with variant from nearest line" is on.
+

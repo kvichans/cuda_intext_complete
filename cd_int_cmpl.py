@@ -2,7 +2,7 @@
 Authors:
     Andrey Kvichansky    (kvichans on github.com)
 Version:
-    '0.9.1 2016-06-08'
+    '0.9.2 2016-06-09'
 ToDo: (see end of file)
 '''
 
@@ -31,6 +31,7 @@ NOT_IND = -1
 DEF_QUOTES  = '"'+"'"
 DEF_BRCKTS  = '[](){}<>'
 DEF_MIN_LEN = 3
+DEF_KILL    = True
 DEF_SNGL    = True
 DEF_NEAR    = True
 DEF_WDSGNS  = '_'
@@ -40,8 +41,12 @@ DEF_EXPAIR  = True
 class Command:
     def dlg_config(self):
         DLG_W,  \
-        DLG_H   = 430, 300
+        DLG_H   = 430, 330
         minl_h  = _('Mininal characters in selection or previous string to start completion')
+        kill_c  = _('Detele tail of base word after &caret')
+        kill_h  = _(  'If [x] then "ab¦cd" will be completed to "ab¦123", "ab¦ABC".'
+                    '\rIf [ ] then "ab¦cd" will be completed to "ab¦cd123", "ab¦cdABC".'
+                    )
         incs_h  = _('What characters will be included to completion variant.'
                     '\rLetters and digits always are included.')
         pair_c  = _('&Expands to include both pair-characters')
@@ -54,6 +59,7 @@ class Command:
                     )
         sngl_c  = _('Do&nt show list with single variant. Directly use the variant.')
         vals    = dict(minl=self.min_len
+                      ,kill=self.kill
                       ,near=self.near
                       ,sngl=self.sngl
                       ,wdcs=self.wdsgns
@@ -77,8 +83,9 @@ class Command:
                      ,dict(           tp='--'   ,t=165                                                                                      ) #
                      ,dict(           tp='lb'   ,tid='minl' ,l=5        ,w=180        ,cap=_('&Minimal base length (2-5):')     ,hint=minl_h) # &m
                      ,dict(cid='minl',tp='sp-ed',t=180      ,l=180      ,w=DLG_W-180-5                                  ,props='2,5,1'      ) #  
-                     ,dict(cid='near',tp='ch'   ,t=210      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line.')      ) # &r
-                     ,dict(cid='sngl',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=sngl_c                                           ) # &n
+                     ,dict(cid='kill',tp='ch'   ,t=210      ,l=5        ,w=290        ,cap=kill_c                               ,hint=kill_h) # &c
+                     ,dict(cid='near',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line.')      ) # &r
+                     ,dict(cid='sngl',tp='ch'   ,t=270      ,l=5        ,w=290        ,cap=sngl_c                                           ) # &n
                      ,dict(cid='dflt',tp='bt'   ,t=DLG_H-30 ,l=5        ,w=130        ,cap=_('&Default values')                             ) # &d
                      ,dict(cid='!'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-180,w=80         ,cap=_('Save')                    ,props='1'          ) #    default
                      ,dict(cid='-'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-85 ,w=80         ,cap=_('Cancel')                                      ) #  
@@ -92,6 +99,7 @@ class Command:
                       focused
             if aid=='dflt':
                 vals['minl']= DEF_MIN_LEN
+                vals['kill']= DEF_KILL
                 vals['sngl']= DEF_SNGL
                 vals['near']= DEF_NEAR
                 vals['wdcs']= DEF_WDSGNS
@@ -102,6 +110,8 @@ class Command:
             if aid=='!':
                 if vals['minl']!=self.min_len:
                     apx.set_opt('itc_min_len', max(2, vals['minl']))
+                if vals['kill']!=self.kill:
+                    apx.set_opt('itc_kill', vals['kill'])
                 if vals['sngl']!=self.sngl:
                     apx.set_opt('itc_sngl', vals['sngl'])
                 if vals['near']!=self.near:
@@ -130,6 +140,7 @@ class Command:
         brckts      = apx.get_opt('itc_brackets'    , DEF_BRCKTS)
 
         self.min_len= apx.get_opt('itc_min_len'     , DEF_MIN_LEN)
+        self.kill   = apx.get_opt('itc_kill'        , DEF_KILL)
         self.sngl   = apx.get_opt('itc_sngl'        , DEF_SNGL)
         self.near   = apx.get_opt('itc_near'        , DEF_NEAR)
         
@@ -155,18 +166,16 @@ class Command:
     class Sess:
         def __str__(self):
             return '' \
-            +   f('we={}, row={}, (bgn,crt)={}, sel={}', self.wdex, self.row, (self.bgn_sub, self.crt_pos), self.sel_sub) \
-            +   f(', i={}, bids={}',self.bids_i, (list(zip(self.bids, self.bids_rs))))
+            +   f('(we,mv,c0)={}, row={}, sel={}', (self.wdex, self.pre_mver, self.pre_crt0), self.row, self.sel_sub) \
+            +   f(', ad={}, i={}, bids={}',self.added, self.bids_i, (list(zip(self.bids, self.bids_rs))))
         def __init__(self):
             self.wdex       = ''        # type: 'word' or 'expr'
             self.row        = -1        # row for work
-            self.crt_pos    = -1        # pos of caret (changed after substitution)
-            self.bgn_sub    = -1        # Start pos to replace
-            self.sel_sub    = False     # Select after subst
+            self.sel_sub    = ''        # Select after subst
             self.bids       = []        # Variants
             self.bids_rs    = []        # Source row inds
             self.bids_i     = NOT_IND   # Last used index of bids
-            self.pre_add_s  = ''        # Last added text
+            self.added      = False     # Text was inserted
             self.pre_mver   = None      # Last mod-ver of ed
             self.pre_crt0   = None      # Last carets  of ed
 
@@ -187,15 +196,10 @@ class Command:
                     and self.sess.pre_crt0 == crts[0]
         
         cEnd, rEnd  = (cCrt, rCrt) if -1==rEnd else (cEnd, rEnd)
-        eb_be       = 'be' if cCrt>cEnd else 'eb' if cCrt<cEnd else ''
+        sel_be_eb   = 'be' if cCrt>cEnd else 'eb' if cCrt<cEnd else ''
         ((rSelB, cSelB)
         ,(rSelE, cSelE))= apx.minmax((rCrt, cCrt), (rEnd, cEnd))
-#       stayed      =           self.sess           \
-#                   and  rCrt ==self.sess.row       \
-#                   and (cSelB==self.sess.bgn_sub   \
-#                       or not  self.sess.sel_sub)  \
-#                   and  cSelE==self.sess.crt_pos   # Not 1st call and Caret/Sel doesnot move/change
-        pass;                   LOG and stayed and log('stayed,(wdex,self.sess.wdex)={}',(stayed,(wdex,self.sess.wdex)))
+        pass;                  #LOG and stayed and log('stayed,(wdex,self.sess.wdex)={}',(stayed,(wdex,self.sess.wdex)))
         if stayed   and   wdex==self.sess.wdex:
             # Sess OK
             return True
@@ -203,6 +207,8 @@ class Command:
         what        = ''                    # Str to find
         what_b      = -1                    # Pos what begin
         what_e      = -1                    # Pos what end
+        kill_b      = -1                    # Pos kill begin
+        kill_e      = -1                    # Pos kill end
         wbnd        = True                  # Need left word bound
         sel         = ''
         if stayed   and   wdex!=self.sess.wdex:
@@ -210,6 +216,8 @@ class Command:
             what    = self.sess.src_what
             what_b  = self.sess.src_what_b
             what_e  = self.sess.src_what_e
+            kill_b  = self.sess.src_kill_b
+            kill_e  = self.sess.src_kill_e
             wbnd    = self.sess.src_wbnd
         if not stayed:
             # New sess
@@ -236,22 +244,20 @@ class Command:
                 if ch_aft.isalnum() or ch_aft in self.wdsgns:
                     shf_r   = len(self.base_re.match(tx_aft).group())
                 what_b  = cCrt-shf_l
-                what_e  = cCrt+shf_r
+                if self.kill:
+                    what_e  = cCrt
+                    kill_b  = cCrt
+                    kill_e  = cCrt+shf_r
+                else:
+                    what_e  = cCrt+shf_r
                 what    = line[what_b:what_e]
                 pass;          #LOG and log('(shf_l,shf_r), (what_b,what_e), what={}',((shf_l,shf_r), (what_b,what_e), what))
-#               if  len(tx_bfr)>=self.min_len   \
-#               and (ch_aft.isspace() or True or ch_aft in self.cls2opn) \
-#               and (tx_bfr[-1].isalnum() 
-#                 or tx_bfr[-1] in self.wdsgns):
-#                   tx_bfr_r= ''.join(reversed(tx_bfr))
-#                   wrd_l   = len(self.base_re.match(tx_bfr_r).group())
-#                   what    = line[cCrt-wrd_l:cCrt]
         
         if not  what \
         or not  what.strip():
             return app.msg_status(_('No data for search'))
         if len(what) < self.min_len:
-            return app.msg_status(f(_('Need |base| >= {}'), self.min_len))
+            return app.msg_status(f(_('Need |base|>={}, but |"{}"|=={}'), self.min_len, what, len(what)))
         pass;                  #LOG and log('what,wbnd={}',(what,wbnd))
         
         asword              = wdex=='word'
@@ -261,13 +267,13 @@ class Command:
             pass;              #LOG and log('new sess',())
             self.sess           = Command.Sess()
             self.sess.row       = rCrt
-#           self.sess.crt_pos   = cSelE
-#           self.sess.bgn_sub   = cSelE - len(what)
-            self.sess.sel_sub   = eb_be
+            self.sess.sel_sub   = sel_be_eb
             self.sess.src_crt   = cCrt
             self.sess.src_what  = what
             self.sess.src_what_b= what_b
             self.sess.src_what_e= what_e
+            self.sess.src_kill_b= kill_b
+            self.sess.src_kill_e= kill_e
             self.sess.src_wbnd  = wbnd
         self.sess.wdex          = wdex
         what_re = re.compile(''
@@ -364,18 +370,15 @@ class Command:
         add_s   = sub_s[len(self.sess.src_what):]
         pass;                  #LOG and log('i, sub_s, add_s={}',(bids_i, sub_s, add_s))
 
-        if self.sess.pre_add_s:
-            line    = ed.get_text_line(self.sess.row)
-            if self.sess.pre_add_s==line[self.sess.src_what_e:self.sess.src_what_e+len(self.sess.pre_add_s)]:
-                pass;          #LOG and log('?? undo mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
-                ed.cmd(cmds.cCommand_Undo)
-                pass;          #LOG and log('ok undo mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
-#       ed.set_caret(    self.sess.src_what_e,              self.sess.row)
-#       ed.delete(       self.sess.src_what_e,              self.sess.row
-#                ,       self.sess.src_what_e+len(add_s),   self.sess.row)
+        if self.sess.added:
+            ed.cmd(cmds.cCommand_Undo)
+            pass;              #LOG and log('undo mod_ver, line={}',(ed.get_prop(app.PROP_MODIFIED_VERSION), ed.get_text_line(self.sess.row)))
+        ed.delete(       self.sess.src_kill_b,              self.sess.row
+                        ,self.sess.src_kill_e,              self.sess.row)
+        pass;                  #LOG and log('kill mod_ver, line={}',(ed.get_prop(app.PROP_MODIFIED_VERSION), ed.get_text_line(self.sess.row)))
         ed.insert(       self.sess.src_what_e,              self.sess.row,  add_s)
-        pass;                  #LOG and log('ok ins  mod_ver={}',(ed.get_prop(app.PROP_MODIFIED_VERSION)))
-        self.sess.pre_add_s = add_s
+        pass;                  #LOG and log('insr mod_ver, line={}',(ed.get_prop(app.PROP_MODIFIED_VERSION), ed.get_text_line(self.sess.row)))
+        self.sess.added     = True
         if False:pass
         elif self.sess.sel_sub=='be':
             ed.set_caret(self.sess.src_what_e+len(add_s),   self.sess.row
@@ -385,21 +388,9 @@ class Command:
                         ,self.sess.src_what_e+len(add_s),   self.sess.row)
         else:
             ed.set_caret(self.sess.src_crt,                 self.sess.row)
-        self.sess.pre_mver    = ed.get_prop(app.PROP_MODIFIED_VERSION)
-        self.sess.pre_crt0    = ed.get_carets()[0]
-
-#       ed.set_caret(self.sess.bgn_sub, self.sess.row)
-#       ed.delete(   self.sess.bgn_sub, self.sess.row
-#                ,   self.sess.crt_pos, self.sess.row)
-#       ed.insert(   self.sess.bgn_sub, self.sess.row
-#                ,   sub_s)
-#       self.sess.crt_pos   = self.sess.bgn_sub + len(sub_s)
-#       if self.sess.sel_sub:
-#           ed.set_caret(self.sess.crt_pos, self.sess.row
-#                       ,self.sess.bgn_sub, self.sess.row)
-#       else:
-#           ed.set_caret(self.sess.crt_pos, self.sess.row)
-#
+        self.sess.pre_mver  = ed.get_prop(app.PROP_MODIFIED_VERSION)
+        self.sess.pre_crt0  = ed.get_carets()[0]
+        
 #       next_i      = (self.sess.bids_i+shft) % len(self.sess.bids)
 #       next_info   = '' if 1==len(self.sess.bids) else \
 #                     f(_('. Next #{}: "{}"'), next_i, self.sess.bids[next_i][:50])

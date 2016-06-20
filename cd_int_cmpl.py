@@ -2,7 +2,7 @@
 Authors:
     Andrey Kvichansky    (kvichans on github.com)
 Version:
-    '0.9.3 2016-06-20'
+    '0.9.4 2016-06-20'
 ToDo: (see end of file)
 '''
 
@@ -386,7 +386,8 @@ class Command:
             ed.set_caret(self.sess.src_what_b,              self.sess.row
                         ,self.sess.src_what_e+len(add_s),   self.sess.row)
         else:
-            ed.set_caret(self.sess.src_crt,                 self.sess.row)
+            ed.set_caret(self.sess.src_what_e+len(add_s),   self.sess.row)
+#           ed.set_caret(self.sess.src_crt,                 self.sess.row)
         self.sess.pre_mver  = ed.get_prop(app.PROP_MODIFIED_VERSION)
         self.sess.pre_crt0  = ed.get_carets()[0]
         

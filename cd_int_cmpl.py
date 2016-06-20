@@ -2,7 +2,7 @@
 Authors:
     Andrey Kvichansky    (kvichans on github.com)
 Version:
-    '0.9.2 2016-06-09'
+    '0.9.3 2016-06-20'
 ToDo: (see end of file)
 '''
 
@@ -137,23 +137,22 @@ class Command:
         self.sess   = None          # Info to work "in one place" - try complete-bids
     
     def _prep_const(self):
-        brckts      = apx.get_opt('itc_brackets'    , DEF_BRCKTS)
+        brckts      = apx.get_opt('intextcomp_brackets'    , apx.get_opt('itc_brackets'    , DEF_BRCKTS))
 
-        self.min_len= apx.get_opt('itc_min_len'     , DEF_MIN_LEN)
-        self.kill   = apx.get_opt('itc_kill'        , DEF_KILL)
-        self.sngl   = apx.get_opt('itc_sngl'        , DEF_SNGL)
-        self.near   = apx.get_opt('itc_near'        , DEF_NEAR)
+        self.min_len= apx.get_opt('intextcomp_min_len'     , apx.get_opt('itc_min_len'     , DEF_MIN_LEN))
+        self.kill   = apx.get_opt('intextcomp_kill'        , apx.get_opt('itc_kill'        , DEF_KILL))
+        self.sngl   = apx.get_opt('intextcomp_sngl'        , apx.get_opt('itc_sngl'        , DEF_SNGL))
+        self.near   = apx.get_opt('intextcomp_near'        , apx.get_opt('itc_near'        , DEF_NEAR))
         
-        self.wdsgns = apx.get_opt('itc_word_signs'  , DEF_WDSGNS)
+        self.wdsgns = apx.get_opt('intextcomp_word_signs'  , apx.get_opt('itc_word_signs'  , DEF_WDSGNS))
         
-        self.exsgns = apx.get_opt('itc_expr_signs'  , DEF_EXSGNS)
-        self.exall  = apx.get_opt('itc_expr_all'    , DEF_EXALL)
-        self.expair = apx.get_opt('itc_expr_pair'   , DEF_EXPAIR)
+        self.exsgns = apx.get_opt('intextcomp_expr_signs'  , apx.get_opt('itc_expr_signs'  , DEF_EXSGNS))
+        self.exall  = apx.get_opt('intextcomp_expr_all'    , apx.get_opt('itc_expr_all'    , DEF_EXALL))
+        self.expair = apx.get_opt('intextcomp_expr_pair'   , apx.get_opt('itc_expr_pair'   , DEF_EXPAIR))
         
-        self.quotes = apx.get_opt('itc_quotes'      , DEF_QUOTES)
+        self.quotes = apx.get_opt('intextcomp_quotes'      , apx.get_opt('itc_quotes'      , DEF_QUOTES))
         self.opn2cls= {brckts[i  ]:brckts[i+1] for i in range(0,len(brckts),2)}
         self.cls2opn= {brckts[i+1]:brckts[i  ] for i in range(0,len(brckts),2)}
-#       self.cmpl   = apx.get_opt('itc_find_within', '|n-sp|word|signs|')  # '|word|signs|n-sp|'
         
         self.wdcmpl = r'[\w'+re.escape(self.wdsgns)+']+' 
         self.excmpl = r'\S+' \

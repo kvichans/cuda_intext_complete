@@ -109,23 +109,23 @@ class Command:
             
             if aid=='!':
                 if vals['minl']!=self.min_len:
-                    apx.set_opt('itc_min_len', max(2, vals['minl']))
+                    apx.set_opt('intextcomp_min_len', max(2, vals['minl']))
                 if vals['kill']!=self.kill:
-                    apx.set_opt('itc_kill', vals['kill'])
+                    apx.set_opt('intextcomp_kill', vals['kill'])
                 if vals['sngl']!=self.sngl:
-                    apx.set_opt('itc_sngl', vals['sngl'])
+                    apx.set_opt('intextcomp_sngl', vals['sngl'])
                 if vals['near']!=self.near:
-                    apx.set_opt('itc_near', vals['near'])
+                    apx.set_opt('intextcomp_near', vals['near'])
                 
                 if vals['wdcs']!=self.wdsgns:
-                    apx.set_opt('itc_word_signs', vals['wdcs'])
+                    apx.set_opt('intextcomp_word_signs', vals['wdcs'])
                 
                 if vals['excs']!=self.exsgns:
-                    apx.set_opt('itc_expr_signs', vals['excs'])
+                    apx.set_opt('intextcomp_expr_signs', vals['excs'])
                 if vals['exal']!=self.exall:
-                    apx.set_opt('itc_expr_all',   vals['exal'])
+                    apx.set_opt('intextcomp_expr_all',   vals['exal'])
                 if vals['pair']!=self.expair:
-                    apx.set_opt('itc_expr_pair',  vals['pair'])
+                    apx.set_opt('intextcomp_expr_pair',  vals['pair'])
                 
                 self._prep_const()
                 break#while

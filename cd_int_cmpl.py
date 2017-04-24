@@ -2,7 +2,7 @@
 Authors:
     Andrey Kvichansky    (kvichans on github.com)
 Version:
-    '0.9.4 2016-06-20'
+    '0.9.5 2017-04-24'
 ToDo: (see end of file)
 '''
 
@@ -43,13 +43,13 @@ class Command:
         DLG_W,  \
         DLG_H   = 430, 330
         minl_h  = _('Mininal characters in selection or previous string to start completion')
-        kill_c  = _('Detele tail of base word after &caret')
+        kill_c  = _('Delete tail of base word after &caret')
         kill_h  = _(  'If [x] then "ab¦cd" will be completed to "ab¦123", "ab¦ABC".'
                     '\rIf [ ] then "ab¦cd" will be completed to "ab¦cd123", "ab¦cdABC".'
                     )
         incs_h  = _('What characters will be included to completion variant.'
                     '\rLetters and digits always are included.')
-        pair_c  = _('&Expands to include both pair-characters')
+        pair_c  = _('&Expands to include both pair-chars')
         pair_h  = _('Example: "·" is space.'
                     '\rVariants for "fun":'
                     '\r   function'
@@ -70,21 +70,21 @@ class Command:
         focused = 'wdcs'
         while True:
             cnts    =[dict(           tp='lb'   ,t=5        ,l=5        ,w=130        ,cap=_('Word-like variant:')                          ) #
-                     ,dict(           tp='lb'   ,tid='wdcs' ,l=40       ,w=130        ,cap=_('Contains extra si&gns:')          ,hint=incs_h) # &g
+                     ,dict(           tp='lb'   ,tid='wdcs' ,l=40       ,w=130        ,cap=_('Contains e&xtra chars:')          ,hint=incs_h) # &x
                      ,dict(cid='wdcs',tp='ed'   ,t=25       ,l=180      ,w=DLG_W-180-5                                                      ) #
                      
                      ,dict(           tp='--'   ,t=50                                                                                       ) #
                      ,dict(           tp='lb'   ,t=65       ,l=5        ,w=130        ,cap=_('Expession-like variant:')                     ) #
                      ,dict(           tp='lb'   ,tid='excs' ,l=40       ,w=130        ,cap=_('Contains extra &signs:')          ,hint=incs_h) # &s
                      ,dict(cid='excs',tp='ed'   ,t=85       ,l=180      ,w=DLG_W-180-5                                  ,en=not vals['exal']) #
-                     ,dict(cid='exal',tp='ch'   ,t=110      ,l=180      ,w=130        ,cap=_('An&y not spaces')         ,act=1              ) # &y
+                     ,dict(cid='exal',tp='ch'   ,t=110      ,l=180      ,w=130        ,cap=_('An&y non-spaces')         ,act=1              ) # &y
                      ,dict(cid='pair',tp='ch'   ,t=135      ,l=40       ,w=290        ,cap=pair_c                               ,hint=pair_h) # &e
                      
                      ,dict(           tp='--'   ,t=165                                                                                      ) #
                      ,dict(           tp='lb'   ,tid='minl' ,l=5        ,w=180        ,cap=_('&Minimal base length (2-5):')     ,hint=minl_h) # &m
                      ,dict(cid='minl',tp='sp-ed',t=180      ,l=180      ,w=DLG_W-180-5                                  ,props='2,5,1'      ) #  
                      ,dict(cid='kill',tp='ch'   ,t=210      ,l=5        ,w=290        ,cap=kill_c                               ,hint=kill_h) # &c
-                     ,dict(cid='near',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line.')      ) # &r
+                     ,dict(cid='near',tp='ch'   ,t=240      ,l=5        ,w=290        ,cap=_('Start with variant from nea&rest line')       ) # &r
                      ,dict(cid='sngl',tp='ch'   ,t=270      ,l=5        ,w=290        ,cap=sngl_c                                           ) # &n
                      ,dict(cid='dflt',tp='bt'   ,t=DLG_H-30 ,l=5        ,w=130        ,cap=_('&Default values')                             ) # &d
                      ,dict(cid='!'   ,tp='bt'   ,t=DLG_H-30 ,l=DLG_W-180,w=80         ,cap=_('Save')                    ,props='1'          ) #    default
@@ -184,11 +184,11 @@ class Command:
         """
         crts    = ed.get_carets()
         if len(crts)>1: 
-            return app.msg_status(_("Command doesn't work with multi-carets"))
+            return app.msg_status(_("Command doesnt work with multi-carets"))
         (cCrt, rCrt
         ,cEnd, rEnd)= crts[0]
         if -1!=rEnd and rCrt!=rEnd:
-            return app.msg_status(_("Command doesn't work with multi-line selection"))
+            return app.msg_status(_("Command doesnt work with multi-line selection"))
 
         stayed      =   self.sess     \
                     and self.sess.pre_mver == ed.get_prop(app.PROP_MODIFIED_VERSION) \
